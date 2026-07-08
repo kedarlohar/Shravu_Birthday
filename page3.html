@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Aya 💌</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --pw: min(42vw, 280px); --ph: min(62vh, 400px); }
+        body, html {
+            width: 100%; height: 100%; overflow: hidden;
+            background: radial-gradient(circle at 50% 40%, #12123a 0%, #08081c 55%, #030310 100%);
+            font-family: sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #starCanvas { position: absolute; top: 0; left: 0; z-index: 1; }
+
+        .scene {
+            position: absolute; inset: 0; z-index: 2;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; gap: 22px;
+            perspective: 2400px;
+        }
+
+        /* ===== COMMENT SECTION (book chya baher, var) ===== */
+        .comment-bar {
+            position: relative;
+            width: min(92%, 600px);
+            min-height: 64px;
+            background: linear-gradient(180deg, #fdf8ee, #f3ead8);
+            border-radius: 16px;
+            padding: 18px 22px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+            color: #6b4f3a;
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(1.2rem, 5vw, 1.7rem);
+            font-weight: 600; text-align: center; line-height: 1.4;
+            opacity: 0; transform: translateY(-8px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .comment-bar.show { opacity: 1; transform: translateY(0); }
+        .comment-bar .heart-tag { position: absolute; top: 10px; right: 14px; font-size: 1rem; }
+
+        /* ===== BOOK (2 pages: left + right) ===== */
+        .book {
+            position: relative;
+            width: calc(var(--pw) * 2);
+            height: var(--ph);
+            transform-style: preserve-3d;
+            transform: translateX(calc(var(--pw) * -0.5));   /* closed: cover centered */
+            transition: transform 0.9s ease;
+        }
+        .book.opened { transform: translateX(0); }
+
+        .book::after {
+            content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+            width: 24px; transform: translateX(-50%);
+            background: linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0), rgba(0,0,0,0.25));
+            z-index: 100; pointer-events: none; opacity: 0; transition: opacity 0.6s ease;
+        }
+        .book.opened::after { opacity: 1; }
+
+        .sheet {
+            position: absolute; top: 0; left: 50%;
+            width: var(--pw); height: 100%;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            transition: transform 0.9s ease;
+            transform: rotateY(0deg);
+        }
+        .sheet.flipped { transform: rotateY(-180deg); }
+
+        .face {
+            position: absolute; inset: 0;
+            backface-visibility: hidden; overflow: hidden;
+            background: #fff;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            padding: 8px;
+        }
+        .face.front { border-radius: 4px 12px 12px 4px; }
+        .face.back  { border-radius: 12px 4px 4px 12px; transform: rotateY(180deg); }
+
+        .face.cover { padding: 0; background: #fdf6ea; border-radius: 6px 14px 14px 6px; }
+        .face.cover img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Fakt photo (comment nahi) */
+        .pic { width: 100%; height: 100%; border-radius: 8px; overflow: hidden; background: #ddd; }
+        .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .face.end { background: linear-gradient(180deg,#fdf8ee,#efe4d0);
+                    display: flex; align-items: center; justify-content: center; }
+        .face.end .big { font-size: 3rem; }
+
+        /* Hint + nav */
+        .hint {
+            position: absolute; bottom: 8%; z-index: 200;
+            color: #ffd6ec; font-size: 0.95rem; letter-spacing: 0.5px;
+            text-shadow: 0 0 10px #ff1493; animation: bob 1.4s ease-in-out infinite;
+        }
+        @keyframes bob { 0%,100%{transform:translateY(0);opacity:.8} 50%{transform:translateY(-8px);opacity:1} }
+
+        .nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            z-index: 200; cursor: pointer; user-select: none;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: rgba(255,255,255,0.12); backdrop-filter: blur(4px);
+            color: #ffd6ec; font-size: 1.6rem;
+            display: none; align-items: center; justify-content: center; transition: background 0.2s;
+        }
+        .nav:hover { background: rgba(255,255,255,0.25); }
+        .nav.show { display: flex; }
+        #navPrev { left: 4%; } #navNext { right: 4%; }
+
+        .floaty-heart { position: absolute; z-index: 3; font-size: 1.3rem;
+            animation: floatUp 6s linear infinite; opacity: 0; }
+        @keyframes floatUp { 0%{transform:translateY(20px) scale(.8);opacity:0} 15%{opacity:1}
+            85%{opacity:1} 100%{transform:translateY(-120px) scale(1.1);opacity:0} }
+    </style>
+</head>
+<body>
+
+    <canvas id="starCanvas"></canvas>
+
+    <div class="scene">
+        <!-- Comment section (book chya baher) -->
+        <div class="comment-bar" id="commentBar">
+            <span class="heart-tag">💕</span>
+            <span id="commentText"></span>
+        </div>
+
+        <!-- Book -->
+        <div class="book" id="book"></div>
+
+        <div class="hint" id="hint">Swipe up / click to open 💌</div>
+        <div class="nav" id="navPrev">‹</div>
+        <div class="nav" id="navNext">›</div>
+    </div>
+
+    <script>
+        // =========================================================
+        // DATA  ->  ithe badla / add kar
+        //   COVER   = hands+heart PNG
+        //   SPREADS = pratyek entry mhanje EK jodी (open pan):
+        //             comment (var section-la) + 2 photos [left, right]
+        // =========================================================
+        const COVER = 'cover.png';
+        const SPREADS = [
+            { comment: 'Happy birthday my love ❤️',                 photos: ['photo1.jpg', 'photo2.jpg'] },
+            { comment: "As long as you're smiling, I'm happy 💕",   photos: ['photo3.jpg', 'photo4.jpg'] }
+        ];
+
+        // Faces: [cover, S0.left, S0.right, S1.left, S1.right, ...]
+        const faces = [{ type:'cover', img: COVER }];
+        SPREADS.forEach(s => {
+            faces.push({ type:'photo', src: s.photos[0] });   // left
+            faces.push({ type:'photo', src: s.photos[1] });   // right
+        });
+        if (faces.length % 2 !== 0) faces.push({ type:'end' });
+
+        function photoFallback(label){
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+                `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='420'>
+                   <rect width='100%' height='100%' fill='#e7ddca'/>
+                   <text x='50%' y='48%' font-size='40' text-anchor='middle'>🖼️</text>
+                   <text x='50%' y='60%' font-size='16' fill='#8a7a5c' text-anchor='middle'>${label}</text>
+                 </svg>`);
+        }
+        function coverFallback(){
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+                `<svg xmlns='http://www.w3.org/2000/svg' width='300' height='430'>
+                   <rect width='100%' height='100%' fill='#fdf6ea'/>
+                   <text x='50%' y='45%' font-size='70' text-anchor='middle'>🤍</text>
+                   <text x='50%' y='60%' font-size='46' text-anchor='middle'>❤️</text>
+                   <text x='50%' y='82%' font-size='15' fill='#999' text-anchor='middle'>cover.png add kar</text>
+                 </svg>`);
+        }
+
+        function buildFace(data, side){
+            const f = document.createElement('div');
+            f.className = 'face ' + side;
+            if (data.type === 'cover') {
+                f.classList.add('cover');
+                const img = document.createElement('img'); img.src = data.img; img.alt='cover';
+                img.addEventListener('error', () => img.src = coverFallback());
+                f.appendChild(img);
+            } else if (data.type === 'end') {
+                f.classList.add('end'); f.innerHTML = `<div class="big">💛</div>`;
+            } else {
+                f.innerHTML = `<div class="pic"><img src="${data.src}" alt="photo"></div>`;
+                const img = f.querySelector('img');
+                img.addEventListener('error', () => img.src = photoFallback(data.src));
+            }
+            return f;
+        }
+
+        const book = document.getElementById('book');
+        const sheets = [];
+        for (let i = 0; i < faces.length; i += 2) {
+            const sheet = document.createElement('div'); sheet.className = 'sheet';
+            sheet.appendChild(buildFace(faces[i], 'front'));
+            if (faces[i+1]) sheet.appendChild(buildFace(faces[i+1], 'back'));
+            book.appendChild(sheet); sheets.push(sheet);
+        }
+
+        // ===== NAVIGATION =====
+        const hint = document.getElementById('hint');
+        const navPrev = document.getElementById('navPrev');
+        const navNext = document.getElementById('navNext');
+        const commentBar = document.getElementById('commentBar');
+        const commentText = document.getElementById('commentText');
+        let current = 0, animating = false;
+
+        function applyZ(){ sheets.forEach((s,i)=> s.style.zIndex = (i<current)? i : (sheets.length-i)); }
+        function updateUI(){
+            book.classList.toggle('opened', current > 0);
+            hint.style.display = current === 0 ? 'block' : 'none';
+            navPrev.classList.toggle('show', current > 1);
+            navNext.classList.toggle('show', current >= 1 && current < sheets.length);
+            const sp = current >= 1 ? SPREADS[current - 1] : null;
+            if (sp) { commentText.textContent = sp.comment; commentBar.classList.add('show'); }
+            else { commentBar.classList.remove('show'); }
+        }
+        applyZ(); updateUI();
+
+        function settle(){ animating = false; applyZ(); }
+        function next() {
+    if (animating || current >= sheets.length) return;
+
+    animating = true;
+    const k = current;
+
+    sheets[k].style.zIndex = 999;
+    sheets[k].classList.add('flipped');
+
+    current++;
+    updateUI();
+
+    sheets[k].addEventListener('transitionend', () => {
+        settle();
+
+        // सर्व pages संपल्यावर पुढची file open
+        if (current >= sheets.length) {
+            setTimeout(() => {
+                window.location.href = "page4.html";
+            }, 1200);   // 1.2 sec नंतर
+        }
+
+    }, { once: true });
+}
+        function prev(){
+            if (animating || current <= 0) return;
+            animating = true; current--; const k = current;
+            sheets[k].style.zIndex = 999; sheets[k].classList.remove('flipped');
+            updateUI();
+            sheets[k].addEventListener('transitionend', settle, { once:true });
+        }
+
+        // DESKTOP: arrows, click, keys, wheel
+        navNext.addEventListener('click', (e)=>{ e.stopPropagation(); next(); startHearts(); });
+        navPrev.addEventListener('click', (e)=>{ e.stopPropagation(); prev(); });
+        book.addEventListener('click', (e)=>{
+            if (current === 0) { next(); startHearts(); return; }
+            (e.clientX >= window.innerWidth/2) ? next() : prev(); startHearts();
+        });
+        window.addEventListener('keydown', (e)=>{
+            if (e.key === 'ArrowRight' || e.key === ' ') { next(); startHearts(); }
+            if (e.key === 'ArrowLeft') prev();
+        });
+        window.addEventListener('wheel', (e)=>{
+            if (e.deltaY > 0) { next(); startHearts(); }
+            else if (e.deltaY < 0 && current > 0) prev();
+        }, { passive:true });
+
+        // TOUCH
+        let sx=null, sy=null;
+        window.addEventListener('touchstart', (e)=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+        window.addEventListener('touchend', (e)=>{
+            if (sx===null) return;
+            const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+            if (current === 0) { if (-dy > 50 && Math.abs(dy) > Math.abs(dx)) { next(); startHearts(); } }
+            else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+                (dx < 0) ? next() : prev(); startHearts();
+            }
+            sx = sy = null;
+        }, {passive:true});
+
+        // ===== STARS =====
+        const canvas = document.getElementById('starCanvas'); const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        function makeStars(){ const count=Math.floor((canvas.width*canvas.height)/6000); const s=[];
+            for(let i=0;i<count;i++) s.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+                r:Math.random()*1.6+0.4,baseAlpha:Math.random()*0.5+0.3,amp:Math.random()*0.5+0.2,
+                speed:Math.random()*0.002+0.001,phase:Math.random()*Math.PI*2}); return s; }
+        let stars = makeStars();
+        function drawStars(t){ ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(const s of stars){ let a=s.baseAlpha+s.amp*Math.sin(t*s.speed+s.phase); a=Math.max(0,Math.min(1,a));
+                ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fillStyle=`rgba(255,255,255,${a})`;
+                ctx.shadowBlur=6; ctx.shadowColor='rgba(255,255,255,0.8)'; ctx.fill(); }
+            requestAnimationFrame(drawStars); }
+        requestAnimationFrame(drawStars);
+        window.addEventListener('resize', ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; stars=makeStars(); });
+
+        // ===== FLOATING HEARTS =====
+        let heartTimer = null;
+        function startHearts(){ if (heartTimer) return; const emojis=['💖','💕','❤️','💗'];
+            heartTimer = setInterval(()=>{ const h=document.createElement('div'); h.className='floaty-heart';
+                h.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+                h.style.left=Math.random()*90+5+'vw'; h.style.bottom='6%';
+                h.style.animationDuration=(Math.random()*3+4)+'s';
+                document.body.appendChild(h); setTimeout(()=>h.remove(),7000); }, 900); }
+    </script>
+</body>
+</html>
